@@ -19,7 +19,16 @@ import type { RefSelectorProps } from './Selector';
 import Selector from './Selector';
 import type { RefTriggerProps } from './SelectTrigger';
 import SelectTrigger from './SelectTrigger';
-import type { RenderNode, Mode, RenderDOMFunc, OnActiveValue, FieldNames } from './interface';
+import type {
+  RenderNode,
+  Mode,
+  RenderDOMFunc,
+  OnActiveValue,
+  FieldNames,
+  BasicOptionCoreData,
+  OptionsType,
+  OptionType,
+} from './interface';
 import type {
   GetLabeledValue,
   FilterOptions,
@@ -68,15 +77,14 @@ export interface RefSelectProps {
 
 export type Placement = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
-export interface SelectProps<ValueType extends object>
-  extends React.AriaAttributes {
+export interface SelectProps<ValueType extends BasicOptionCoreData> extends React.AriaAttributes {
   prefixCls?: string;
   id?: string;
   className?: string;
   style?: React.CSSProperties;
 
   // Options
-  options?: OptionsType;
+  options?: OptionsType<ValueType>;
   children?: React.ReactNode;
   mode?: Mode;
 
@@ -99,8 +107,8 @@ export interface SelectProps<ValueType extends object>
    * In TreeSelect, `false` will highlight match item.
    * It's by design.
    */
-  filterOption?: boolean | FilterFunc<OptionsType[number]>;
-  filterSort?: (optionA: OptionsType[number], optionB: OptionsType[number]) => number;
+  filterOption?: boolean | FilterFunc<OptionType<ValueType>>;
+  filterSort?: (optionA: OptionType<ValueType>, optionB: OptionType<ValueType>) => number;
   showSearch?: boolean;
   autoClearSearchValue?: boolean;
   onSearch?: (value: string) => void;
@@ -157,11 +165,11 @@ export interface SelectProps<ValueType extends object>
   onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   onPopupScroll?: React.UIEventHandler<HTMLDivElement>;
   onDropdownVisibleChange?: (open: boolean) => void;
-  onSelect?: (value: SingleType<ValueType>, option: OptionsType[number]) => void;
-  onDeselect?: (value: SingleType<ValueType>, option: OptionsType[number]) => void;
+  onSelect?: (value: SingleType<ValueType>, option: OptionType<ValueType>) => void;
+  onDeselect?: (value: SingleType<ValueType>, option: OptionType<ValueType>) => void;
   onInputKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   onClick?: React.MouseEventHandler;
-  onChange?: (value: ValueType, option: OptionsType[number] | OptionsType) => void;
+  onChange?: (value: ValueType, option: OptionType<ValueType> | OptionsType<ValueType>) => void;
   onBlur?: React.FocusEventHandler<HTMLElement>;
   onFocus?: React.FocusEventHandler<HTMLElement>;
   onMouseDown?: React.MouseEventHandler<HTMLDivElement>;
@@ -181,49 +189,64 @@ export interface SelectProps<ValueType extends object>
     onClear?: OnClear;
     skipTriggerChange?: boolean;
     skipTriggerSelect?: boolean;
-    onRawSelect?: (value: RawValueType, option: OptionsType[number], source: SelectSource) => void;
+    onRawSelect?: (
+      value: RawValueType,
+      option: OptionType<ValueType>,
+      source: SelectSource,
+    ) => void;
     onRawDeselect?: (
       value: RawValueType,
-      option: OptionsType[number],
+      option: OptionType<ValueType>,
       source: SelectSource,
     ) => void;
   };
 }
 
-export interface GenerateConfig<OptionsType extends object[]> {
+export interface GenerateConfig<ValueType extends BasicOptionCoreData> {
   prefixCls: string;
   components: {
     optionList: React.ForwardRefExoticComponent<
       React.PropsWithoutRef<
-        Omit<OptionListProps<OptionsType>, 'options'> & { options: OptionsType }
+        Omit<OptionListProps<OptionsType<ValueType>>, 'options'> & {
+          options: OptionsType<ValueType>;
+        }
       > &
         React.RefAttributes<RefOptionListProps>
     >;
   };
   /** Convert jsx tree into `OptionsType` */
-  convertChildrenToData: (children: React.ReactNode) => OptionsType;
+  convertChildrenToData: (children: React.ReactNode) => OptionsType<ValueType>;
   /** Flatten nest options into raw option list */
-  flattenOptions: (options: OptionsType, props: any) => FlattenOptionsType<OptionsType>;
+  flattenOptions: (
+    options: OptionsType<ValueType>,
+    props: any,
+  ) => FlattenOptionsType<OptionsType<ValueType>>;
   /** Convert single raw value into { label, value } format. Will be called by each value */
-  getLabeledValue: GetLabeledValue<FlattenOptionsType<OptionsType>>;
-  filterOptions: FilterOptions<OptionsType>;
+  getLabeledValue: GetLabeledValue<FlattenOptionsType<OptionsType<ValueType>>>;
+  filterOptions: FilterOptions<OptionsType<ValueType>>;
   findValueOption: // Need still support legacy ts api
-  | ((values: RawValueType[], options: FlattenOptionsType<OptionsType>) => OptionsType)
+  | ((
+        values: RawValueType[],
+        options: FlattenOptionsType<OptionsType<ValueType>>,
+      ) => OptionsType<ValueType>)
     // New API add prevValueOptions support
     | ((
         values: RawValueType[],
-        options: FlattenOptionsType<OptionsType>,
-        info?: { prevValueOptions?: OptionsType[]; props?: any },
-      ) => OptionsType);
+        options: FlattenOptionsType<OptionsType<ValueType>>,
+        info?: { prevValueOptions?: OptionsType<ValueType>[]; props?: any },
+      ) => OptionsType<ValueType>);
   /** Check if a value is disabled */
-  isValueDisabled: (value: RawValueType, options: FlattenOptionsType<OptionsType>) => boolean;
+  isValueDisabled: (
+    value: RawValueType,
+    options: FlattenOptionsType<OptionsType<ValueType>>,
+  ) => boolean;
   warningProps?: (props: any) => void;
   fillOptionsWithMissingValue?: (
-    options: OptionsType,
+    options: OptionsType<ValueType>,
     value: DefaultValueType,
     optionLabelProp: string,
     labelInValue: boolean,
-  ) => OptionsType;
+  ) => OptionsType<ValueType>;
   omitDOMProps?: (props: object) => object;
 }
 
@@ -231,14 +254,9 @@ export interface GenerateConfig<OptionsType extends object[]> {
  * This function is in internal usage.
  * Do not use it in your prod env since we may refactor this.
  */
-export default function generateSelector<
-  OptionsType extends {
-    value?: RawValueType;
-    label?: React.ReactNode;
-    key?: Key;
-    disabled?: boolean;
-  }[],
->(config: GenerateConfig<OptionsType>) {
+export default function generateSelector<ValueType extends BasicOptionCoreData>(
+  config: GenerateConfig<ValueType>,
+) {
   const {
     prefixCls: defaultPrefixCls,
     components: { optionList: OptionList },

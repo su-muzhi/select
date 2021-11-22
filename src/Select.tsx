@@ -30,7 +30,7 @@
  */
 
 import * as React from 'react';
-import type { OptionsType as SelectOptionsType } from './interface';
+import type { BasicOptionCoreData, OptionData } from './interface';
 import SelectOptionList from './OptionList';
 import Option from './Option';
 import OptGroup from './OptGroup';
@@ -45,10 +45,9 @@ import {
 } from './utils/valueUtil';
 import type { SelectProps, RefSelectProps } from './generate';
 import generateSelector from './generate';
-import type { DefaultValueType } from './interface/generator';
 import warningProps from './utils/warningPropsUtil';
 
-const RefSelect = generateSelector<SelectOptionsType>({
+const RefSelect = generateSelector({
   prefixCls: 'rc-select',
   components: {
     optionList: SelectOptionList,
@@ -63,15 +62,14 @@ const RefSelect = generateSelector<SelectOptionsType>({
   fillOptionsWithMissingValue,
 });
 
-export type ExportedSelectProps<
-  ValueType extends DefaultValueType = DefaultValueType
-> = SelectProps<SelectOptionsType, ValueType>;
+export type ExportedSelectProps<ValueType extends BasicOptionCoreData = OptionData> =
+  SelectProps<ValueType>;
 
 /**
  * Typescript not support generic with function component,
  * we have to wrap an class component to handle this.
  */
-class Select<VT> extends React.Component<SelectProps<SelectOptionsType, VT>> {
+class Select<ValueType> extends React.Component<SelectProps<ValueType>> {
   static Option: typeof Option = Option;
 
   static OptGroup: typeof OptGroup = OptGroup;

@@ -51,24 +51,29 @@ export interface OptionGroupData {
   [prop: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export type OptionDataType<ValueType extends BasicOptionCoreData = OptionData> =
-  ValueType extends (infer T)[] ? T : ValueType;
-export type OptionGroupDataType<ValueType extends BasicOptionCoreData = OptionData> = Omit<
+export type OptionDataType<ValueType extends BasicOptionCoreData> = ValueType extends (infer T)[]
+  ? T
+  : ValueType;
+
+export type OptionGroupDataType<ValueType extends BasicOptionCoreData> = Omit<
   OptionDataType<ValueType>,
   'value'
 > & {
   options: OptionDataType<ValueType>[];
 };
-export type OptionsType<ValueType extends BasicOptionCoreData = OptionData> = (
-  | OptionDataType<ValueType>
-  | OptionGroupDataType<ValueType>
-)[];
 
-export interface FlattenOptionData<ValueType extends BasicOptionCoreData = OptionData> {
+// ======================== Generic ========================
+export type OptionType<ValueType extends BasicOptionCoreData> =
+  | OptionDataType<ValueType>
+  | OptionGroupDataType<ValueType>;
+
+export type OptionsType<ValueType extends BasicOptionCoreData> = OptionType<ValueType>[];
+
+export interface FlattenOptionData<ValueType extends BasicOptionCoreData> {
   group?: boolean;
   groupOption?: boolean;
   key: string | number;
-  data: OptionsType<ValueType>[number];
+  data: OptionType<ValueType>;
   label?: React.ReactNode;
   value?: React.Key;
 }
