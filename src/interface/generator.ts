@@ -1,3 +1,4 @@
+import type { BasicOptionCoreData, OptionType } from '.';
 import type { SelectProps, RefSelectProps } from '../generate';
 
 export type SelectSource = 'option' | 'selection' | 'input';
@@ -34,10 +35,10 @@ export type CustomTagProps = {
 };
 
 // ==================================== Generator ====================================
-export type GetLabeledValue<FOT extends FlattenOptionsType> = (
+export type GetLabeledValue<ValueType extends BasicOptionCoreData> = (
   value: RawValueType,
   config: {
-    options: FOT;
+    options: FlattenOptionsType<ValueType>;
     prevValueMap: Map<RawValueType, LabelValueType>;
     labelInValue: boolean;
     optionLabelProp: string;
@@ -54,17 +55,20 @@ export type FilterOptions<OptionsType extends object[]> = (
   },
 ) => OptionsType;
 
-export type FilterFunc<OptionType> = (inputValue: string, option?: OptionType) => boolean;
+export type FilterFunc<ValueType extends BasicOptionCoreData> = (
+  inputValue: string,
+  option?: OptionType<ValueType>,
+) => boolean;
 
-export declare function RefSelectFunc<OptionsType extends object[], ValueType>(
-  Component: React.RefForwardingComponent<RefSelectProps, SelectProps<OptionsType, ValueType>>,
+export declare function RefSelectFunc<ValueType>(
+  Component: React.RefForwardingComponent<RefSelectProps, SelectProps<ValueType>>,
 ): React.ForwardRefExoticComponent<
-  React.PropsWithoutRef<SelectProps<OptionsType, ValueType>> & React.RefAttributes<RefSelectProps>
+  React.PropsWithoutRef<SelectProps<ValueType>> & React.RefAttributes<RefSelectProps>
 >;
 
-export type FlattenOptionsType<OptionsType extends object[] = object[]> = {
+export type FlattenOptionsType<RawOptionData extends BasicOptionCoreData> = {
   key: Key;
-  data: OptionsType[number];
+  data: OptionType<RawOptionData>;
   label?: React.ReactNode;
   value?: RawValueType;
   /** Used for customize data */

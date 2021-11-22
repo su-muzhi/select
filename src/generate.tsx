@@ -36,7 +36,6 @@ import type {
   DefaultValueType,
   RawValueType,
   LabelValueType,
-  Key,
   RefSelectFunc,
   DisplayLabelValueType,
   FlattenOptionsType,
@@ -52,7 +51,7 @@ import TransBtn from './TransBtn';
 import useLock from './hooks/useLock';
 import useDelayReset from './hooks/useDelayReset';
 import useLayoutEffect from './hooks/useLayoutEffect';
-import { getSeparatedContent } from './utils/valueUtil';
+import { getSeparatedContent, fillFieldNames } from './utils/valueUtil';
 import useSelectTriggerControl from './hooks/useSelectTriggerControl';
 import useCacheDisplayValue from './hooks/useCacheDisplayValue';
 import useCacheOptions from './hooks/useCacheOptions';
@@ -77,20 +76,28 @@ export interface RefSelectProps {
 
 export type Placement = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
-export interface SelectProps<ValueType extends BasicOptionCoreData> extends React.AriaAttributes {
+export type SelectValue<RawOptionType extends BasicOptionCoreData> =
+  | string
+  | number
+  | (string | number)[]
+  | RawOptionType
+  | RawOptionType[];
+
+export interface SelectProps<RawOptionType extends BasicOptionCoreData>
+  extends React.AriaAttributes {
   prefixCls?: string;
   id?: string;
   className?: string;
   style?: React.CSSProperties;
 
   // Options
-  options?: OptionsType<ValueType>;
+  options?: OptionsType<RawOptionType>;
   children?: React.ReactNode;
   mode?: Mode;
 
   // Value
-  value?: ValueType;
-  defaultValue?: ValueType;
+  value?: SelectValue<RawOptionType>;
+  defaultValue?: RawOptionType;
   labelInValue?: boolean;
   /** Config max length of input. This is only work when `mode` is `combobox` */
   maxLength?: number;
@@ -107,8 +114,8 @@ export interface SelectProps<ValueType extends BasicOptionCoreData> extends Reac
    * In TreeSelect, `false` will highlight match item.
    * It's by design.
    */
-  filterOption?: boolean | FilterFunc<OptionType<ValueType>>;
-  filterSort?: (optionA: OptionType<ValueType>, optionB: OptionType<ValueType>) => number;
+  filterOption?: boolean | FilterFunc<OptionType<RawOptionType>>;
+  filterSort?: (optionA: OptionType<RawOptionType>, optionB: OptionType<RawOptionType>) => number;
   showSearch?: boolean;
   autoClearSearchValue?: boolean;
   onSearch?: (value: string) => void;
@@ -165,11 +172,14 @@ export interface SelectProps<ValueType extends BasicOptionCoreData> extends Reac
   onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
   onPopupScroll?: React.UIEventHandler<HTMLDivElement>;
   onDropdownVisibleChange?: (open: boolean) => void;
-  onSelect?: (value: SingleType<ValueType>, option: OptionType<ValueType>) => void;
-  onDeselect?: (value: SingleType<ValueType>, option: OptionType<ValueType>) => void;
+  onSelect?: (value: SingleType<RawOptionType>, option: OptionType<RawOptionType>) => void;
+  onDeselect?: (value: SingleType<RawOptionType>, option: OptionType<RawOptionType>) => void;
   onInputKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   onClick?: React.MouseEventHandler;
-  onChange?: (value: ValueType, option: OptionType<ValueType> | OptionsType<ValueType>) => void;
+  onChange?: (
+    value: RawOptionType,
+    option: OptionType<RawOptionType> | OptionsType<RawOptionType>,
+  ) => void;
   onBlur?: React.FocusEventHandler<HTMLElement>;
   onFocus?: React.FocusEventHandler<HTMLElement>;
   onMouseDown?: React.MouseEventHandler<HTMLDivElement>;
@@ -191,62 +201,53 @@ export interface SelectProps<ValueType extends BasicOptionCoreData> extends Reac
     skipTriggerSelect?: boolean;
     onRawSelect?: (
       value: RawValueType,
-      option: OptionType<ValueType>,
+      option: OptionType<RawOptionType>,
       source: SelectSource,
     ) => void;
     onRawDeselect?: (
       value: RawValueType,
-      option: OptionType<ValueType>,
+      option: OptionType<RawOptionType>,
       source: SelectSource,
     ) => void;
   };
 }
 
-export interface GenerateConfig<ValueType extends BasicOptionCoreData> {
+export interface GenerateConfig {
   prefixCls: string;
   components: {
     optionList: React.ForwardRefExoticComponent<
       React.PropsWithoutRef<
-        Omit<OptionListProps<OptionsType<ValueType>>, 'options'> & {
-          options: OptionsType<ValueType>;
+        Omit<OptionListProps<any>, 'options'> & {
+          options: OptionsType<any>;
         }
       > &
         React.RefAttributes<RefOptionListProps>
     >;
   };
   /** Convert jsx tree into `OptionsType` */
-  convertChildrenToData: (children: React.ReactNode) => OptionsType<ValueType>;
+  convertChildrenToData: (children: React.ReactNode) => OptionsType<any>;
   /** Flatten nest options into raw option list */
-  flattenOptions: (
-    options: OptionsType<ValueType>,
-    props: any,
-  ) => FlattenOptionsType<OptionsType<ValueType>>;
+  flattenOptions: (options: OptionsType<any>, props: any) => FlattenOptionsType<any>;
   /** Convert single raw value into { label, value } format. Will be called by each value */
-  getLabeledValue: GetLabeledValue<FlattenOptionsType<OptionsType<ValueType>>>;
-  filterOptions: FilterOptions<OptionsType<ValueType>>;
+  getLabeledValue: GetLabeledValue<any>;
+  filterOptions: FilterOptions<OptionsType<any>>;
   findValueOption: // Need still support legacy ts api
-  | ((
-        values: RawValueType[],
-        options: FlattenOptionsType<OptionsType<ValueType>>,
-      ) => OptionsType<ValueType>)
+  | ((values: RawValueType[], options: FlattenOptionsType<any>) => OptionsType<any>)
     // New API add prevValueOptions support
     | ((
         values: RawValueType[],
-        options: FlattenOptionsType<OptionsType<ValueType>>,
-        info?: { prevValueOptions?: OptionsType<ValueType>[]; props?: any },
-      ) => OptionsType<ValueType>);
+        options: FlattenOptionsType<any>,
+        info?: { prevValueOptions?: OptionsType<any>[]; props?: any },
+      ) => OptionsType<any>);
   /** Check if a value is disabled */
-  isValueDisabled: (
-    value: RawValueType,
-    options: FlattenOptionsType<OptionsType<ValueType>>,
-  ) => boolean;
+  isValueDisabled: (value: RawValueType, options: FlattenOptionsType<any>) => boolean;
   warningProps?: (props: any) => void;
   fillOptionsWithMissingValue?: (
-    options: OptionsType<ValueType>,
+    options: OptionsType<any>,
     value: DefaultValueType,
     optionLabelProp: string,
     labelInValue: boolean,
-  ) => OptionsType<ValueType>;
+  ) => OptionsType<any>;
   omitDOMProps?: (props: object) => object;
 }
 
@@ -254,9 +255,7 @@ export interface GenerateConfig<ValueType extends BasicOptionCoreData> {
  * This function is in internal usage.
  * Do not use it in your prod env since we may refactor this.
  */
-export default function generateSelector<ValueType extends BasicOptionCoreData>(
-  config: GenerateConfig<ValueType>,
-) {
+export default function generateSelector(config: GenerateConfig) {
   const {
     prefixCls: defaultPrefixCls,
     components: { optionList: OptionList },
@@ -272,8 +271,8 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
   } = config;
 
   // Use raw define since `React.FC` not support generic
-  function Select<ValueType extends DefaultValueType>(
-    props: SelectProps<OptionsType, ValueType>,
+  function Select<RawOptionData extends BasicOptionCoreData>(
+    props: SelectProps<RawOptionData>,
     ref: React.Ref<RefSelectProps>,
   ): React.ReactElement {
     const {
@@ -402,6 +401,10 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
     const mergedShowSearch =
       showSearch !== undefined ? showSearch : isMultiple || mode === 'combobox';
 
+    // Used for calculation.
+    // We do not pass to OptionList directly since `rc-tree-select` has legacy logic
+    const mergedFieldNames = useMemo(() => fillFieldNames(fieldNames), [fieldNames]);
+
     // ======================== Mobile ========================
     const [mobile, setMobile] = useState(false);
     useEffect(() => {
@@ -443,14 +446,15 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
     const [innerSearchValue, setInnerSearchValue] = useState('');
     let mergedSearchValue = innerSearchValue;
     if (mode === 'combobox' && mergedValue !== undefined) {
-      mergedSearchValue = mergedValue as string;
+      mergedSearchValue =
+        mergedValue && typeof mergedValue !== 'object' ? String(mergedValue) : null;
     } else if (searchValue !== undefined) {
       mergedSearchValue = searchValue;
     } else if (inputValue) {
       mergedSearchValue = inputValue;
     }
 
-    const mergedOptions = useMemo<OptionsType>((): OptionsType => {
+    const mergedOptions = useMemo<OptionsType<RawOptionData>>((): OptionsType<RawOptionData> => {
       let newOptions = options;
       if (newOptions === undefined) {
         newOptions = convertChildrenToData(children);
@@ -469,10 +473,10 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
         );
       }
 
-      return newOptions || ([] as OptionsType);
+      return newOptions || ([] as OptionsType<RawOptionData>);
     }, [options, children, mode, mergedValue]);
 
-    const mergedFlattenOptions: FlattenOptionsType<OptionsType> = useMemo(
+    const mergedFlattenOptions: FlattenOptionsType<RawOptionData> = useMemo(
       () => flattenOptions(mergedOptions, props),
       [mergedOptions],
     );
@@ -480,32 +484,37 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
     const getValueOption = useCacheOptions(mergedFlattenOptions);
 
     // Display options for OptionList
-    const displayOptions = useMemo<OptionsType>(() => {
+    const displayOptions = useMemo<OptionsType<RawOptionData>>(() => {
       if (!mergedSearchValue || !mergedShowSearch) {
-        return [...mergedOptions] as OptionsType;
+        return [...mergedOptions] as OptionsType<RawOptionData>;
       }
-      const filteredOptions: OptionsType = filterOptions(mergedSearchValue, mergedOptions, {
-        optionFilterProp,
-        filterOption: mode === 'combobox' && filterOption === undefined ? () => true : filterOption,
-      });
+      const filteredOptions: OptionsType<RawOptionData> = filterOptions(
+        mergedSearchValue,
+        mergedOptions,
+        {
+          optionFilterProp,
+          filterOption:
+            mode === 'combobox' && filterOption === undefined ? () => true : filterOption,
+        },
+      );
       if (
         mode === 'tags' &&
         filteredOptions.every((opt) => opt[optionFilterProp] !== mergedSearchValue)
       ) {
         filteredOptions.unshift({
-          value: mergedSearchValue,
-          label: mergedSearchValue,
+          [mergedFieldNames.value]: mergedSearchValue,
+          [mergedFieldNames.label]: mergedSearchValue,
           key: '__RC_SELECT_TAG_PLACEHOLDER__',
-        });
+        } as OptionType<RawOptionData>);
       }
       if (filterSort && Array.isArray(filteredOptions)) {
-        return ([...filteredOptions] as OptionsType).sort(filterSort);
+        return ([...filteredOptions] as OptionsType<RawOptionData>).sort(filterSort);
       }
 
       return filteredOptions;
-    }, [mergedOptions, mergedSearchValue, mode, mergedShowSearch, filterSort]);
+    }, [mergedOptions, mergedSearchValue, mode, mergedShowSearch, filterSort, mergedFieldNames]);
 
-    const displayFlattenOptions: FlattenOptionsType<OptionsType> = useMemo(
+    const displayFlattenOptions: FlattenOptionsType<RawOptionData> = useMemo(
       () => flattenOptions(displayOptions, props),
       [displayOptions],
     );
@@ -563,7 +572,7 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
                 optionLabelProp: mergedOptionLabelProp,
               })
             : newValue
-        ) as SingleType<ValueType>;
+        ) as SingleType<RawOptionData>;
 
         if (isSelect && onSelect) {
           onSelect(selectValue, outOption);
@@ -590,7 +599,7 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
         return;
       }
       const newRawValuesOptions = getValueOption(newRawValues);
-      const outValues = toOuterValues<FlattenOptionsType<OptionsType>>(Array.from(newRawValues), {
+      const outValues = toOuterValues<FlattenOptionsType<RawOptionData>>(Array.from(newRawValues), {
         labelInValue: mergedLabelInValue,
         options: newRawValuesOptions,
         getLabeledValue,
@@ -598,7 +607,7 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
         optionLabelProp: mergedOptionLabelProp,
       });
 
-      const outValue: ValueType = (isMultiple ? outValues : outValues[0]) as ValueType;
+      const outValue: RawOptionData = (isMultiple ? outValues : outValues[0]) as RawOptionData;
       // Skip trigger if prev & current value is both empty
       if (onChange && (mergedRawValue.length !== 0 || outValues.length !== 0)) {
         const outOptions = findValueOption(newRawValues, newRawValuesOptions, {
@@ -747,7 +756,7 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
               const item = mergedFlattenOptions.find(
                 ({ data }) => data[mergedOptionLabelProp] === label,
               );
-              return item ? item.data.value : null;
+              return item ? item.data[mergedFieldNames.value] : null;
             })
             .filter((val: RawValueType) => val !== null);
         }
@@ -995,8 +1004,8 @@ export default function generateSelector<ValueType extends BasicOptionCoreData>(
         id={mergedId}
         open={mergedOpen}
         childrenAsData={!options}
-        options={displayOptions}
         fieldNames={fieldNames}
+        options={displayOptions}
         flattenOptions={displayFlattenOptions}
         multiple={isMultiple}
         values={rawValues}

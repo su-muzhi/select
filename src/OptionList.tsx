@@ -15,15 +15,16 @@ import type {
   RenderNode,
   OnActiveValue,
   FieldNames,
+  BasicOptionCoreData,
 } from './interface';
 import type { RawValueType, FlattenOptionsType } from './interface/generator';
 import { fillFieldNames } from './utils/valueUtil';
 import { isPlatformMac } from './utils/platformUtil';
 
-export interface OptionListProps<OptionsType extends object[]> {
+export interface OptionListProps<ValueType extends BasicOptionCoreData> {
   prefixCls: string;
   id: string;
-  options: OptionsType;
+  options: OptionsType<ValueType>;
   fieldNames?: FieldNames;
   flattenOptions: FlattenOptionsType<OptionsType>;
   height: number;

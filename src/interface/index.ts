@@ -51,29 +51,28 @@ export interface OptionGroupData {
   [prop: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export type OptionDataType<ValueType extends BasicOptionCoreData> = ValueType extends (infer T)[]
-  ? T
-  : ValueType;
+export type OptionDataType<RawOptionType extends BasicOptionCoreData> =
+  RawOptionType extends (infer T)[] ? T : RawOptionType;
 
-export type OptionGroupDataType<ValueType extends BasicOptionCoreData> = Omit<
-  OptionDataType<ValueType>,
+export type OptionGroupDataType<RawOptionType extends BasicOptionCoreData> = Omit<
+  OptionDataType<RawOptionType>,
   'value'
 > & {
-  options: OptionDataType<ValueType>[];
+  options: OptionDataType<RawOptionType>[];
 };
 
 // ======================== Generic ========================
-export type OptionType<ValueType extends BasicOptionCoreData> =
-  | OptionDataType<ValueType>
-  | OptionGroupDataType<ValueType>;
+export type OptionType<RawOptionType extends BasicOptionCoreData> =
+  | OptionDataType<RawOptionType>
+  | OptionGroupDataType<RawOptionType>;
 
-export type OptionsType<ValueType extends BasicOptionCoreData> = OptionType<ValueType>[];
+export type OptionsType<RawOptionType extends BasicOptionCoreData> = OptionType<RawOptionType>[];
 
-export interface FlattenOptionData<ValueType extends BasicOptionCoreData> {
+export interface FlattenOptionData<RawOptionType extends BasicOptionCoreData> {
   group?: boolean;
   groupOption?: boolean;
   key: string | number;
-  data: OptionType<ValueType>;
+  data: OptionType<RawOptionType>;
   label?: React.ReactNode;
   value?: React.Key;
 }
