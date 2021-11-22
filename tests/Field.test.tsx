@@ -76,4 +76,24 @@ describe('Select.Field', () => {
     wrapper.find('.rc-select-item-option-content').last().simulate('click');
     expect(onChange).toHaveBeenCalledWith(['light', 'little'], [OPTION_1, OPTION_2]);
   });
+
+  it('generic type', () => {
+    interface OptionType {
+      customTitle: string;
+      customValue: string;
+      customChildren: OptionType[];
+    }
+
+    const wrapper = mount(
+      <Select<OptionType>
+        options={[
+          {
+            customTitle: 'Bamboo',
+            customValue: 'bamboo',
+            customChildren: [],
+          },
+        ]}
+      />,
+    );
+  });
 });
