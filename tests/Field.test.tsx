@@ -1,4 +1,3 @@
-/* eslint-disable import/no-named-as-default-member */
 import { mount } from 'enzyme';
 import { act } from 'react-dom/test-utils';
 import * as React from 'react';
@@ -95,5 +94,7 @@ describe('Select.Field', () => {
         ]}
       />,
     );
+
+    expect(wrapper).toBeTruthy();
   });
 });

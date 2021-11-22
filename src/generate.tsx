@@ -68,7 +68,8 @@ export interface RefSelectProps {
 
 export type Placement = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
-export interface SelectProps<OptionsType extends object[], ValueType> extends React.AriaAttributes {
+export interface SelectProps<ValueType extends object>
+  extends React.AriaAttributes {
   prefixCls?: string;
   id?: string;
   className?: string;

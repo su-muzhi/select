@@ -20,13 +20,16 @@ export type OnActiveValue = (
   info?: { source?: 'keyboard' | 'mouse' },
 ) => void;
 
-export interface OptionCoreData {
+export interface BasicOptionCoreData {
   key?: Key;
   disabled?: boolean;
-  value: Key;
-  title?: string;
   className?: string;
   style?: React.CSSProperties;
+}
+
+export interface OptionCoreData extends BasicOptionCoreData {
+  value: Key;
+  title?: string;
   label?: React.ReactNode;
   /** @deprecated Only works when use `children` as option data */
   children?: React.ReactNode;
@@ -48,13 +51,24 @@ export interface OptionGroupData {
   [prop: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export type OptionsType = (OptionData | OptionGroupData)[];
+export type OptionDataType<ValueType extends BasicOptionCoreData = OptionData> =
+  ValueType extends (infer T)[] ? T : ValueType;
+export type OptionGroupDataType<ValueType extends BasicOptionCoreData = OptionData> = Omit<
+  OptionDataType<ValueType>,
+  'value'
+> & {
+  options: OptionDataType<ValueType>[];
+};
+export type OptionsType<ValueType extends BasicOptionCoreData = OptionData> = (
+  | OptionDataType<ValueType>
+  | OptionGroupDataType<ValueType>
+)[];
 
-export interface FlattenOptionData {
+export interface FlattenOptionData<ValueType extends BasicOptionCoreData = OptionData> {
   group?: boolean;
   groupOption?: boolean;
   key: string | number;
-  data: OptionData | OptionGroupData;
+  data: OptionsType<ValueType>[number];
   label?: React.ReactNode;
   value?: React.Key;
 }
