@@ -35,10 +35,10 @@ export type CustomTagProps = {
 };
 
 // ==================================== Generator ====================================
-export type GetLabeledValue<ValueType extends BasicOptionCoreData> = (
+export type GetLabeledValue<RawOptionData extends BasicOptionCoreData> = (
   value: RawValueType,
   config: {
-    options: FlattenOptionsType<ValueType>;
+    options: FlattenOptionsType<RawOptionData>;
     prevValueMap: Map<RawValueType, LabelValueType>;
     labelInValue: boolean;
     optionLabelProp: string;
@@ -55,9 +55,9 @@ export type FilterOptions<OptionsType extends object[]> = (
   },
 ) => OptionsType;
 
-export type FilterFunc<ValueType extends BasicOptionCoreData> = (
+export type FilterFunc<RawOptionData extends BasicOptionCoreData> = (
   inputValue: string,
-  option?: OptionType<ValueType>,
+  option?: OptionType<RawOptionData>,
 ) => boolean;
 
 export declare function RefSelectFunc<ValueType>(

@@ -9,7 +9,7 @@ import type { ListRef } from 'rc-virtual-list';
 import List from 'rc-virtual-list';
 import TransBtn from './TransBtn';
 import type {
-  OptionsType as SelectOptionsType,
+  OptionsType,
   FlattenOptionData as SelectFlattenOptionData,
   OptionData,
   RenderNode,
@@ -21,12 +21,12 @@ import type { RawValueType, FlattenOptionsType } from './interface/generator';
 import { fillFieldNames } from './utils/valueUtil';
 import { isPlatformMac } from './utils/platformUtil';
 
-export interface OptionListProps<ValueType extends BasicOptionCoreData> {
+export interface OptionListProps<RawOptionData extends BasicOptionCoreData> {
   prefixCls: string;
   id: string;
-  options: OptionsType<ValueType>;
+  options: OptionsType<RawOptionData>;
   fieldNames?: FieldNames;
-  flattenOptions: FlattenOptionsType<OptionsType>;
+  flattenOptions: FlattenOptionsType<RawOptionData>;
   height: number;
   itemHeight: number;
   values: Set<RawValueType>;
@@ -60,10 +60,7 @@ export interface RefOptionListProps {
  * Using virtual list of option display.
  * Will fallback to dom if use customize render.
  */
-const OptionList: React.ForwardRefRenderFunction<
-  RefOptionListProps,
-  OptionListProps<SelectOptionsType>
-> = (
+const OptionList: React.ForwardRefRenderFunction<RefOptionListProps, OptionListProps<any>> = (
   {
     prefixCls,
     id,
@@ -297,7 +294,7 @@ const OptionList: React.ForwardRefRenderFunction<
         {renderItem(activeIndex)}
         {renderItem(activeIndex + 1)}
       </div>
-      <List<SelectFlattenOptionData>
+      <List<SelectFlattenOptionData<any>>
         itemKey="key"
         ref={listRef}
         data={memoFlattenOptions}
@@ -388,9 +385,7 @@ const OptionList: React.ForwardRefRenderFunction<
   );
 };
 
-const RefOptionList = React.forwardRef<RefOptionListProps, OptionListProps<SelectOptionsType>>(
-  OptionList,
-);
+const RefOptionList = React.forwardRef<RefOptionListProps, OptionListProps<any>>(OptionList);
 RefOptionList.displayName = 'OptionList';
 
 export default RefOptionList;

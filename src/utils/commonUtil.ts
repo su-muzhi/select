@@ -1,3 +1,4 @@
+import type { BasicOptionCoreData } from '@/interface';
 import type {
   RawValueType,
   GetLabeledValue,
@@ -46,7 +47,7 @@ export function toInnerValue(
 /**
  * Convert internal value into out event value
  */
-export function toOuterValues<FOT extends FlattenOptionsType>(
+export function toOuterValues<RawOptionData extends BasicOptionCoreData>(
   valueList: RawValueType[],
   {
     optionLabelProp,
@@ -57,8 +58,8 @@ export function toOuterValues<FOT extends FlattenOptionsType>(
   }: {
     optionLabelProp: string;
     labelInValue: boolean;
-    getLabeledValue: GetLabeledValue<FOT>;
-    options: FOT;
+    getLabeledValue: GetLabeledValue<RawOptionData>;
+    options: FlattenOptionsType<RawOptionData>;
     prevValueMap: Map<RawValueType, LabelValueType>;
   },
 ): RawValueType[] | LabelValueType[] {
@@ -80,7 +81,7 @@ export function toOuterValues<FOT extends FlattenOptionsType>(
 
 export function removeLastEnabledValue<
   T extends { disabled?: boolean },
-  P extends RawValueType | object
+  P extends RawValueType | object,
 >(measureValues: T[], values: P[]): { values: P[]; removedValue: P } {
   const newValues = [...values];
 

@@ -25,6 +25,7 @@ export interface BasicOptionCoreData {
   disabled?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  _INTERNAL_OPTION_VALUE_?: RawValueType;
 }
 
 export interface OptionCoreData extends BasicOptionCoreData {

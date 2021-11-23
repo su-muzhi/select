@@ -14,7 +14,7 @@ function convertNodeToOption(node: React.ReactElement): OptionData {
 export function convertChildrenToData(
   nodes: React.ReactNode,
   optionOnly: boolean = false,
-): OptionsType {
+): OptionsType<any> {
   return toArray(nodes)
     .map((node: React.ReactElement, index: number): OptionData | OptionGroupData | null => {
       if (!React.isValidElement(node) || !node.type) {

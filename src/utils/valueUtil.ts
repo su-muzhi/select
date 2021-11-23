@@ -1,10 +1,11 @@
 import warning from 'rc-util/lib/warning';
+import type * as React from 'react';
 import type {
-  OptionsType as SelectOptionsType,
-  OptionData,
-  OptionGroupData,
+  OptionsType,
   FlattenOptionData,
   FieldNames,
+  OptionType,
+  BasicOptionCoreData,
 } from '../interface';
 import type {
   LabelValueType,
@@ -16,12 +17,12 @@ import type {
 
 import { toArray } from './commonUtil';
 
-function getKey(data: OptionData | OptionGroupData, index: number) {
+function getKey(data: any, valueFieldName: string, index: number) {
   const { key } = data;
   let value: RawValueType;
 
-  if ('value' in data) {
-    ({ value } = data);
+  if (valueFieldName in data) {
+    value = data[valueFieldName];
   }
 
   if (key !== null && key !== undefined) {
@@ -48,11 +49,11 @@ export function fillFieldNames(fieldNames?: FieldNames) {
  * We use `optionOnly` here is aim to avoid user use nested option group.
  * Here is simply set `key` to the index if not provided.
  */
-export function flattenOptions(
-  options: SelectOptionsType,
+export function flattenOptions<RawOptionData>(
+  options: OptionsType<RawOptionData>,
   { fieldNames }: { fieldNames?: FieldNames } = {},
-): FlattenOptionData[] {
-  const flattenList: FlattenOptionData[] = [];
+): FlattenOptionData<RawOptionData>[] {
+  const flattenList: FlattenOptionData<RawOptionData>[] = [];
 
   const {
     label: fieldLabel,
@@ -60,14 +61,14 @@ export function flattenOptions(
     options: fieldOptions,
   } = fillFieldNames(fieldNames);
 
-  function dig(list: SelectOptionsType, isGroupOption: boolean) {
-    list.forEach((data) => {
+  function dig(list: OptionsType<RawOptionData>, isGroupOption: boolean) {
+    list.forEach((data: OptionType<RawOptionData> & object) => {
       const label = data[fieldLabel];
 
       if (isGroupOption || !(fieldOptions in data)) {
         // Option
         flattenList.push({
-          key: getKey(data, flattenList.length),
+          key: getKey(data, fieldValue, flattenList.length),
           groupOption: isGroupOption,
           data,
           label,
@@ -76,7 +77,7 @@ export function flattenOptions(
       } else {
         // Option Group
         flattenList.push({
-          key: getKey(data, flattenList.length),
+          key: getKey(data, fieldValue, flattenList.length),
           group: true,
           data,
           label,
@@ -112,17 +113,17 @@ function injectPropsWithOption<T>(option: T): T {
   return newOption;
 }
 
-export function findValueOption(
+export function findValueOption<RawOptionData extends BasicOptionCoreData>(
   values: RawValueType[],
-  options: FlattenOptionData[],
-  { prevValueOptions = [] }: { prevValueOptions?: OptionData[] } = {},
-): OptionData[] {
-  const optionMap: Map<RawValueType, OptionData> = new Map();
+  options: FlattenOptionData<RawOptionData>[],
+  { prevValueOptions = [] }: { prevValueOptions?: RawOptionData[] } = {},
+): RawOptionData[] {
+  const optionMap: Map<RawValueType, RawOptionData> = new Map();
 
   options.forEach(({ data, group, value }) => {
     if (!group) {
       // Check if match
-      optionMap.set(value, data as OptionData);
+      optionMap.set(value, data as RawOptionData);
     }
   });
 
@@ -141,7 +142,8 @@ export function findValueOption(
   });
 }
 
-export const getLabeledValue: GetLabeledValue<FlattenOptionData[]> = (
+// TS do not support generic type before declaration. Has to use `any` here.
+export const getLabeledValue: GetLabeledValue<any> = (
   value,
   { options, prevValueMap, labelInValue, optionLabelProp },
 ): LabelValueType => {
@@ -181,8 +183,8 @@ function toRawString(content: React.ReactNode): string {
 }
 
 /** Filter single option if match the search text */
-function getFilterFunction(optionFilterProp: string) {
-  return (searchValue: string, option: OptionData | OptionGroupData) => {
+function getFilterFunction<RawOptionData extends BasicOptionCoreData>(optionFilterProp: string) {
+  return (searchValue: string, option: OptionType<RawOptionData>) => {
     const lowerSearchText = searchValue.toLowerCase();
 
     // Group label search
@@ -198,16 +200,19 @@ function getFilterFunction(optionFilterProp: string) {
 }
 
 /** Filter options and return a new options by the search text */
-export function filterOptions(
+export function filterOptions<RawOptionData extends BasicOptionCoreData>(
   searchValue: string,
-  options: SelectOptionsType,
+  options: OptionsType<RawOptionData>,
   {
     optionFilterProp,
     filterOption,
-  }: { optionFilterProp: string; filterOption: boolean | FilterFunc<SelectOptionsType[number]> },
+  }: {
+    optionFilterProp: string;
+    filterOption: boolean | FilterFunc<RawOptionData>;
+  },
 ) {
-  const filteredOptions: SelectOptionsType = [];
-  let filterFunc: FilterFunc<SelectOptionsType[number]>;
+  const filteredOptions: OptionsType<RawOptionData> = [];
+  let filterFunc: FilterFunc<RawOptionData>;
 
   if (filterOption === false) {
     return [...options];
@@ -271,7 +276,10 @@ export function getSeparatedContent(text: string, tokens: string[]): string[] {
   return match ? list : null;
 }
 
-export function isValueDisabled(value: RawValueType, options: FlattenOptionData[]): boolean {
+export function isValueDisabled<RawOptionData extends BasicOptionCoreData>(
+  value: RawValueType,
+  options: FlattenOptionData<RawOptionData>[],
+): boolean {
   const option = findValueOption([value], options)[0];
   return option.disabled;
 }
@@ -279,12 +287,12 @@ export function isValueDisabled(value: RawValueType, options: FlattenOptionData[
 /**
  * `tags` mode should fill un-list item into the option list
  */
-export function fillOptionsWithMissingValue(
-  options: SelectOptionsType,
+export function fillOptionsWithMissingValue<RawOptionData extends BasicOptionCoreData>(
+  options: OptionsType<RawOptionData>,
   value: DefaultValueType,
   optionLabelProp: string,
   labelInValue: boolean,
-): SelectOptionsType {
+): OptionsType<RawOptionData> {
   const values = toArray<RawValueType | LabelValueType>(value).slice().sort();
   const cloneOptions = [...options];
 

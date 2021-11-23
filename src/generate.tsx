@@ -599,7 +599,7 @@ export default function generateSelector(config: GenerateConfig) {
         return;
       }
       const newRawValuesOptions = getValueOption(newRawValues);
-      const outValues = toOuterValues<FlattenOptionsType<RawOptionData>>(Array.from(newRawValues), {
+      const outValues = toOuterValues<RawOptionData>(Array.from(newRawValues), {
         labelInValue: mergedLabelInValue,
         options: newRawValuesOptions,
         getLabeledValue,
